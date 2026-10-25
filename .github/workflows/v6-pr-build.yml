@@ -42,3 +42,5 @@ jobs:
 # Build fix: import Compose Spacer used for the 4dp NEXT/LAST button gap.
 
 # UI update based on build 121: dismiss snackbar notices after 1s; enlarge drawer labels by two typography steps.
+
+# Volume update from build 123: physical volume buttons now traverse 22 steps across 0-100.
