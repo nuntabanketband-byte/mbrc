@@ -46,3 +46,5 @@ jobs:
 # Branding update from build 125: use CIBO drawer logo, gray connection circle, Wi-Fi glyph +4dp.
 
 # Run compatibility APK build for CIBO branding changes based on build 125.
+
+# Rebuild for 32-step volume granularity based on build 127.
