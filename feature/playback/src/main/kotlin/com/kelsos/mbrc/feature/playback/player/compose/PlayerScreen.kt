@@ -9,6 +9,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -26,9 +27,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -66,6 +72,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -79,7 +86,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.palette.graphics.Palette
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
@@ -95,10 +105,15 @@ import com.kelsos.mbrc.core.common.state.Repeat
 import com.kelsos.mbrc.core.common.state.ShuffleMode
 import com.kelsos.mbrc.core.common.state.TrackInfo
 import com.kelsos.mbrc.core.common.state.TrackRating
+import com.kelsos.mbrc.core.data.nowplaying.NowPlaying
 import com.kelsos.mbrc.core.common.utilities.coroutines.AppCoroutineDispatchers
 import com.kelsos.mbrc.core.ui.R as CoreUiR
 import com.kelsos.mbrc.core.ui.compose.ActionItem
 import com.kelsos.mbrc.core.ui.compose.DynamicScreenScaffold
+import com.kelsos.mbrc.core.ui.compose.DragDropState
+import com.kelsos.mbrc.core.ui.compose.displayedSourceIndex
+import com.kelsos.mbrc.core.ui.compose.dragHandle
+import com.kelsos.mbrc.core.ui.compose.rememberDragDropState
 import com.kelsos.mbrc.core.ui.compose.ThinSlider
 import com.kelsos.mbrc.core.ui.compose.TopBarState
 import com.kelsos.mbrc.core.ui.compose.WaveProgressIndicator
@@ -111,6 +126,8 @@ import com.kelsos.mbrc.feature.playback.lyrics.compose.LyricsScreenContent
 import com.kelsos.mbrc.feature.playback.player.IPlayerActions
 import com.kelsos.mbrc.feature.playback.player.PlaybackState
 import com.kelsos.mbrc.feature.playback.player.PlayerViewModel
+import com.kelsos.mbrc.feature.playback.nowplaying.NowPlayingViewModel
+import com.kelsos.mbrc.feature.playback.nowplaying.compose.NowPlayingTrackItem
 import com.kelsos.mbrc.feature.playback.player.VolumeState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -132,6 +149,8 @@ fun PlayerScreen(
 ) {
   // Collect separate state flows for granular recomposition
   val playingTrack by viewModel.playingTrack.collectAsStateWithLifecycle()
+  val queueViewModel: NowPlayingViewModel = koinViewModel()
+  val queueTracks = queueViewModel.tracks.collectAsLazyPagingItems()
   val playingPosition by viewModel.playingPosition.collectAsStateWithLifecycle()
   val trackRating by viewModel.trackRating.collectAsStateWithLifecycle()
   val volumeState by viewModel.volumeState.collectAsStateWithLifecycle()
@@ -212,7 +231,8 @@ fun PlayerScreen(
         ActionItem(
           icon = Icons.Default.Search,
           contentDescription = stringResource(R.string.player_search_library),
-          onClick = onNavigateToLibrarySearch
+          onClick = onNavigateToLibrarySearch,
+          iconSize = 48.dp
         )
       ),
       defaultTitle = title,
@@ -226,6 +246,9 @@ fun PlayerScreen(
       // layout keeps its content clear of the system bars (#324/#325).
       PlayerScreenContent(
         playingTrack = playingTrack,
+        queueTracks = queueTracks,
+        onQueueTrackClick = { position -> queueViewModel.actions.play(position) },
+        onNavigateToArtist = onNavigateToArtist,
         playingPosition = playingPosition,
         trackRating = trackRating,
         volumeState = volumeState,
@@ -272,6 +295,9 @@ fun PlayerScreen(
 @Composable
 fun PlayerScreenContent(
   playingTrack: TrackInfo,
+  queueTracks: LazyPagingItems<NowPlaying>,
+  onQueueTrackClick: (Int) -> Unit,
+  onNavigateToArtist: (String) -> Unit,
   playingPosition: PlayingPosition,
   trackRating: TrackRating,
   volumeState: VolumeState,
@@ -338,6 +364,9 @@ fun PlayerScreenContent(
         tightSpacing = maxHeight < PlayerConstants.SHORT_HEIGHT_THRESHOLD,
         painter = albumArtState.painter,
         playingTrack = playingTrack,
+        queueTracks = queueTracks,
+        onQueueTrackClick = onQueueTrackClick,
+        onNavigateToArtist = onNavigateToArtist,
         playingPosition = playingPosition,
         isFavorite = isFavorite,
         isBanned = isBanned,
@@ -359,6 +388,9 @@ fun PlayerScreenContent(
         contentMaxWidth = contentMaxWidth,
         painter = albumArtState.painter,
         playingTrack = playingTrack,
+        queueTracks = queueTracks,
+        onQueueTrackClick = onQueueTrackClick,
+        onNavigateToArtist = onNavigateToArtist,
         playingPosition = playingPosition,
         isFavorite = isFavorite,
         isBanned = isBanned,
@@ -564,6 +596,9 @@ private fun PortraitPlayerLayout(
   contentMaxWidth: Dp,
   painter: AsyncImagePainter,
   playingTrack: TrackInfo,
+  queueTracks: LazyPagingItems<NowPlaying>,
+  onQueueTrackClick: (Int) -> Unit,
+  onNavigateToArtist: (String) -> Unit,
   playingPosition: PlayingPosition,
   isFavorite: Boolean,
   isBanned: Boolean,
@@ -601,16 +636,28 @@ private fun PortraitPlayerLayout(
     BoxWithConstraints(
       modifier = Modifier
         .weight(1f, fill = false)
-        .widthIn(max = contentMaxWidth)
-        .fillMaxWidth()
-        .padding(horizontal = PlayerConstants.CONTENT_PADDING),
-      contentAlignment = Alignment.Center
+        .fillMaxWidth(),
+      // Anchor the queue to the top of its slot; do not center it in leftover space.
+      contentAlignment = Alignment.TopCenter
     ) {
-      // Reserve the original artwork footprint but draw nothing here.
-      Spacer(modifier = Modifier.size(minOf(maxWidth, maxHeight)))
+      QueuePreview(
+        tracks = queueTracks,
+        playingTrackPath = playingTrack.path,
+        isPlaybackActive = playbackState.playerState == PlayerState.Playing,
+        onTrackClick = onQueueTrackClick,
+        onGoToArtist = onNavigateToArtist,
+        modifier = Modifier
+          .requiredSize(
+            width = maxWidth,
+            // Extend the queue panel down toward the track title instead of leaving
+            // a large empty gap below the queue.
+            height = minOf(maxWidth, maxHeight) + 224.dp
+          )
+          .offset(y = 100.dp)
+      )
     }
 
-    Spacer(modifier = Modifier.height(24.dp))
+    Spacer(modifier = Modifier.height(148.dp))
 
     // The cover above is free to take the full width, but the metadata and transport below are
     // not: on a portrait tablet an 800dp seek bar and a title centred across the same span read
@@ -631,6 +678,9 @@ private fun PortraitPlayerLayout(
         modifier = Modifier
           .fillMaxWidth()
           .padding(horizontal = PlayerConstants.CONTENT_PADDING)
+          // Offset the title directly: the oversized queue preview and centered parent
+          // can absorb Spacer changes without visibly moving the title.
+          .offset(y = 60.dp)
       )
 
       // Rating display (optional). Left-aligned with the title above it rather than centred in
@@ -652,6 +702,7 @@ private fun PortraitPlayerLayout(
       // on the same edge as the title and the volume row.
       ProgressSection(
         position = playingPosition,
+        isStopped = playbackState.playerState == PlayerState.Stopped,
         onSeek = actions.seek,
         modifier = Modifier
           .fillMaxWidth()
@@ -689,6 +740,9 @@ private fun LandscapePlayerLayout(
   tightSpacing: Boolean,
   painter: AsyncImagePainter,
   playingTrack: TrackInfo,
+  queueTracks: LazyPagingItems<NowPlaying>,
+  onQueueTrackClick: (Int) -> Unit,
+  onNavigateToArtist: (String) -> Unit,
   playingPosition: PlayingPosition,
   isFavorite: Boolean,
   isBanned: Boolean,
@@ -728,8 +782,12 @@ private fun LandscapePlayerLayout(
       modifier = Modifier.weight(1f),
       contentAlignment = Alignment.Center
     ) {
-      // Preserve the landscape spacing without displaying album artwork.
-      Spacer(
+      QueuePreview(
+        tracks = queueTracks,
+        playingTrackPath = playingTrack.path,
+        isPlaybackActive = playbackState.playerState == PlayerState.Playing,
+        onTrackClick = onQueueTrackClick,
+        onGoToArtist = onNavigateToArtist,
         modifier = Modifier
           .fillMaxHeight(PlayerConstants.LANDSCAPE_ALBUM_HEIGHT_FRACTION)
           .aspectRatio(1f)
@@ -779,6 +837,7 @@ private fun LandscapePlayerLayout(
         // Progress bar
         ProgressSection(
           position = playingPosition,
+          isStopped = playbackState.playerState == PlayerState.Stopped,
           onSeek = actions.seek,
           modifier = Modifier.fillMaxWidth()
         )
@@ -800,6 +859,118 @@ private fun LandscapePlayerLayout(
           onOutputClick = onOutputClick,
           modifier = Modifier.fillMaxWidth()
         )
+      }
+    }
+  }
+}
+
+private fun queuePreviewSourceIndex(
+  slot: Int,
+  dragDropState: DragDropState,
+  tracks: LazyPagingItems<NowPlaying>,
+  draggedId: Long?
+): Int {
+  val source = dragDropState.dragSourceIndex
+  val target = dragDropState.draggingItemIndex
+  if (source == null || target == null) return slot
+
+  // Paging may publish the moved track before the drag settle animation completes.
+  // Once the dragged id is already at the target slot, render the emitted order directly.
+  val pagingHasNewOrder = dragDropState.isSettling &&
+    draggedId != null &&
+    tracks.peek(target)?.id == draggedId
+  return if (pagingHasNewOrder) slot else displayedSourceIndex(slot, source, target)
+}
+
+@Composable
+private fun QueuePreview(
+  tracks: LazyPagingItems<NowPlaying>,
+  playingTrackPath: String,
+  isPlaybackActive: Boolean,
+  onTrackClick: (Int) -> Unit,
+  onGoToArtist: (String) -> Unit,
+  modifier: Modifier = Modifier
+) {
+  val queueViewModel: NowPlayingViewModel = koinViewModel()
+  val listState = rememberLazyListState()
+  val dragDropState = rememberDragDropState(
+    lazyListState = listState,
+    onMove = { from, to -> queueViewModel.actions.moveTrack(from, to) },
+    onDragEnd = { queueViewModel.actions.move() }
+  )
+  val draggedId = remember(dragDropState.dragSourceIndex) {
+    dragDropState.dragSourceIndex?.let { tracks.peek(it)?.id }
+  }
+
+  Surface(
+    modifier = modifier,
+    shape = RoundedCornerShape(12.dp),
+    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.72f),
+    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+  ) {
+    Column(modifier = Modifier.fillMaxSize()) {
+      Text(
+        text = stringResource(R.string.nav_queue),
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+      )
+      if (tracks.itemCount == 0) {
+        Box(
+          modifier = Modifier.weight(1f).fillMaxWidth(),
+          contentAlignment = Alignment.Center
+        ) {
+          Text(
+            text = stringResource(R.string.now_playing__empty_list),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+          )
+        }
+      } else {
+        LazyColumn(
+          state = listState,
+          modifier = Modifier.weight(1f).fillMaxWidth()
+        ) {
+          items(
+            count = tracks.itemCount,
+            key = { slot ->
+              val source = queuePreviewSourceIndex(slot, dragDropState, tracks, draggedId)
+              tracks.peek(source)?.id?.toString() ?: "queue-placeholder-$source"
+            }
+          ) { slot ->
+            val sourceIndex = queuePreviewSourceIndex(slot, dragDropState, tracks, draggedId)
+            val track = tracks[sourceIndex]
+            val isDragging = slot == dragDropState.draggingItemIndex
+            if (track == null) {
+              Spacer(
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .height(56.dp)
+                  .background(MaterialTheme.colorScheme.surface)
+              )
+            } else {
+              NowPlayingTrackItem(
+                track = track,
+                isPlaying = track.path == playingTrackPath,
+                isDragging = isDragging,
+                isPlaybackActive = isPlaybackActive && track.path == playingTrackPath,
+                onClick = { onTrackClick(track.position) },
+                onGoToAlbum = null,
+                onGoToArtist = { onGoToArtist(track.artist) },
+                modifier = if (isDragging) {
+                  Modifier
+                    .fillMaxWidth()
+                    .zIndex(1f)
+                    .graphicsLayer { translationY = dragDropState.draggingItemOffset }
+                } else {
+                  Modifier.fillMaxWidth().animateItem(fadeInSpec = null, fadeOutSpec = null)
+                },
+                dragHandleModifier = Modifier.dragHandle(dragDropState, sourceIndex),
+                showOverflowMenu = false
+              )
+            }
+          }
+        }
       }
     }
   }
@@ -928,6 +1099,7 @@ private fun TrackInfoWithFavorite(
 @Composable
 private fun ProgressSection(
   position: PlayingPosition,
+  isStopped: Boolean,
   onSeek: (Int) -> Unit,
   modifier: Modifier = Modifier
 ) {
@@ -938,10 +1110,16 @@ private fun ProgressSection(
 
   val isStream = position.isStream
   val totalMs = position.total.toFloat().coerceAtLeast(1f)
-  val currentNormalized = if (isStream) 0f else position.current.toFloat() / totalMs
+  val displayedCurrent = if (isStopped) 0L else position.current
+  val currentNormalized = if (isStream) 0f else displayedCurrent.toFloat() / totalMs
 
-  LaunchedEffect(position.current) {
-    if (!isUserSeeking && !ignoreServerUpdates && !isStream) {
+  LaunchedEffect(position.current, isStopped) {
+    if (isStopped) {
+      // MusicBee can retain the last reported position after Stop; keep the UI at 0:00.
+      sliderPosition = 0f
+      isUserSeeking = false
+      ignoreServerUpdates = false
+    } else if (!isUserSeeking && !ignoreServerUpdates && !isStream) {
       sliderPosition = currentNormalized
     }
   }
@@ -956,7 +1134,7 @@ private fun ProgressSection(
       )
     } else {
       ThinSlider(
-        value = if (isUserSeeking || ignoreServerUpdates) sliderPosition else currentNormalized,
+        value = if (isStopped) 0f else if (isUserSeeking || ignoreServerUpdates) sliderPosition else currentNormalized,
         onValueChange = {
           isUserSeeking = true
           sliderPosition = it
@@ -989,9 +1167,9 @@ private fun ProgressSection(
     ) {
       // Tabular figures: the elapsed time reflows every second otherwise, because the default
       // proportional digits are not the same width.
-      val timeStyle = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum")
+      val timeStyle = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum")
       Text(
-        text = position.currentMinutes,
+        text = if (isStopped) "00:00" else position.currentMinutes,
         style = timeStyle,
         color = MaterialTheme.colorScheme.onSurfaceVariant
       )
@@ -1140,7 +1318,7 @@ private fun PlaybackControls(playbackState: PlaybackState, actions: IPlayerActio
             Icons.Default.PlayArrow
           },
           contentDescription = stringResource(R.string.main_button_play_pause_description),
-          modifier = Modifier.size(32.dp)
+          modifier = Modifier.size(40.dp)
         )
       }
     }

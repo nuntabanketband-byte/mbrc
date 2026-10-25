@@ -1,6 +1,7 @@
 package com.kelsos.mbrc.feature.library.compose.components
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,9 +30,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.sp
 import com.kelsos.mbrc.core.data.library.album.Album
 import com.kelsos.mbrc.core.data.library.artist.Artist
 import com.kelsos.mbrc.core.data.library.genre.Genre
@@ -315,44 +323,53 @@ fun TrackListItem(
 }
 
 @Composable
+private fun LibraryMenuText(text: String, fontSize: TextUnit = 18.sp) {
+  Text(
+    text = text,
+    style = MaterialTheme.typography.bodyLarge.copy(
+      fontSize = fontSize
+    )
+  )
+}
+
+@Composable
+private fun QueueActionMenuText(action: String, arrow: String) {
+  Text(
+    text = buildAnnotatedString {
+      withStyle(SpanStyle(fontSize = 22.sp, fontWeight = FontWeight.Bold)) {
+        append(action)
+      }
+      append(" $arrow")
+    },
+    style = MaterialTheme.typography.bodyLarge
+  )
+}
+
+@Composable
 private fun TrackItemMenu(expanded: Boolean, onDismiss: () -> Unit, onQueue: (Queue) -> Unit) {
   DropdownMenu(
     expanded = expanded,
-    onDismissRequest = onDismiss
+    onDismissRequest = onDismiss,
+    modifier = Modifier.border(
+      width = 2.dp,
+      color = Color.DarkGray,
+      shape = RoundedCornerShape(4.dp)
+    )
   ) {
     DropdownMenuItem(
-      text = { Text(stringResource(R.string.menu_play)) },
-      onClick = {
-        onDismiss()
-        onQueue(Queue.Now)
-      }
-    )
-    DropdownMenuItem(
-      text = { Text(stringResource(R.string.menu_queue_next)) },
+      modifier = Modifier.padding(vertical = 10.dp),
+      text = { QueueActionMenuText(action = "NEXT", arrow = "➡️") },
       onClick = {
         onDismiss()
         onQueue(Queue.Next)
       }
     )
     DropdownMenuItem(
-      text = { Text(stringResource(R.string.menu_queue_last)) },
+      modifier = Modifier.padding(vertical = 10.dp),
+      text = { QueueActionMenuText(action = "LAST", arrow = "⬇️") },
       onClick = {
         onDismiss()
         onQueue(Queue.Last)
-      }
-    )
-    DropdownMenuItem(
-      text = { Text(stringResource(R.string.menu_play_artist)) },
-      onClick = {
-        onDismiss()
-        onQueue(Queue.PlayArtist)
-      }
-    )
-    DropdownMenuItem(
-      text = { Text(stringResource(R.string.menu_play_queue_all)) },
-      onClick = {
-        onDismiss()
-        onQueue(Queue.AddAll)
       }
     )
   }
@@ -365,21 +382,21 @@ private fun LibraryItemMenu(expanded: Boolean, onDismiss: () -> Unit, onQueue: (
     onDismissRequest = onDismiss
   ) {
     DropdownMenuItem(
-      text = { Text(stringResource(R.string.menu_play)) },
+      text = { LibraryMenuText(stringResource(R.string.menu_play)) },
       onClick = {
         onDismiss()
         onQueue(Queue.Now)
       }
     )
     DropdownMenuItem(
-      text = { Text(stringResource(R.string.menu_queue_next)) },
+      text = { LibraryMenuText(stringResource(R.string.menu_queue_next)) },
       onClick = {
         onDismiss()
         onQueue(Queue.Next)
       }
     )
     DropdownMenuItem(
-      text = { Text(stringResource(R.string.menu_queue_last)) },
+      text = { LibraryMenuText(stringResource(R.string.menu_queue_last)) },
       onClick = {
         onDismiss()
         onQueue(Queue.Last)
@@ -400,28 +417,28 @@ private fun GenreItemMenu(
     onDismissRequest = onDismiss
   ) {
     DropdownMenuItem(
-      text = { Text(stringResource(R.string.menu_go_to_albums)) },
+      text = { LibraryMenuText(stringResource(R.string.menu_go_to_albums)) },
       onClick = {
         onDismiss()
         onGoToAlbums()
       }
     )
     DropdownMenuItem(
-      text = { Text(stringResource(R.string.menu_play)) },
+      text = { LibraryMenuText(stringResource(R.string.menu_play)) },
       onClick = {
         onDismiss()
         onQueue(Queue.Now)
       }
     )
     DropdownMenuItem(
-      text = { Text(stringResource(R.string.menu_queue_next)) },
+      text = { LibraryMenuText(stringResource(R.string.menu_queue_next)) },
       onClick = {
         onDismiss()
         onQueue(Queue.Next)
       }
     )
     DropdownMenuItem(
-      text = { Text(stringResource(R.string.menu_queue_last)) },
+      text = { LibraryMenuText(stringResource(R.string.menu_queue_last)) },
       onClick = {
         onDismiss()
         onQueue(Queue.Last)

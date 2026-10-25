@@ -744,12 +744,14 @@ fun NowPlayingTrackItem(
   track: NowPlaying,
   isPlaying: Boolean,
   isDragging: Boolean,
+  isPlaybackActive: Boolean = isPlaying,
   onClick: () -> Unit,
   onGoToAlbum: (() -> Unit)?,
   onGoToArtist: () -> Unit,
   modifier: Modifier = Modifier,
   dragHandleModifier: Modifier = Modifier,
-  onRemove: (() -> Unit)? = null
+  onRemove: (() -> Unit)? = null,
+  showOverflowMenu: Boolean = true
 ) {
   var showMenu by remember { mutableStateOf(false) }
 
@@ -792,18 +794,18 @@ fun NowPlayingTrackItem(
           .padding(start = 16.dp, top = 12.dp, bottom = 12.dp, end = 8.dp),
         verticalAlignment = Alignment.CenterVertically
       ) {
-        // Playing indicator - animated audio bars
-        if (isPlaying) {
+        // Playing indicator - larger animated audio bars
+        if (isPlaying && isPlaybackActive) {
           AudioBarsIndicator(
             color = MaterialTheme.colorScheme.primary,
-            barMaxHeight = 18.dp,
-            modifier = Modifier.size(24.dp)
+            barMaxHeight = 20.dp,
+            modifier = Modifier.size(20.dp)
           )
         } else {
-          Spacer(modifier = Modifier.size(24.dp))
+          Spacer(modifier = Modifier.size(20.dp))
         }
 
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(4.dp))
 
         // Track info
         Column(modifier = Modifier.weight(1f)) {
@@ -815,17 +817,20 @@ fun NowPlayingTrackItem(
             overflow = TextOverflow.Ellipsis,
             color = MaterialTheme.colorScheme.onSurface
           )
-          Text(
-            text = track.artist,
-            style = MaterialTheme.typography.bodyMedium,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-          )
+          if (track.artist.isNotBlank() && !track.artist.equals("Unknown Artist", ignoreCase = true)) {
+            Text(
+              text = track.artist,
+              style = MaterialTheme.typography.bodyMedium,
+              maxLines = 1,
+              overflow = TextOverflow.Ellipsis,
+              color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+          }
         }
 
         // Overflow menu
-        Box {
+        if (showOverflowMenu) {
+          Box {
           IconButton(onClick = { showMenu = true }) {
             Icon(
               imageVector = Icons.Default.MoreVert,
@@ -882,6 +887,7 @@ fun NowPlayingTrackItem(
               )
             }
           }
+        }
         }
 
         // Drag handle — 48dp touch target wraps a 24dp icon. The handle owns
