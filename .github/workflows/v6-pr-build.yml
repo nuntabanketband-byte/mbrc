@@ -37,3 +37,4 @@ jobs:
 # Current UI update: separate NEXT/LAST buttons, widened 26dp to the left.
 # Current UI update: Library search icon enlarged from 24dp to 48dp.
 # Current UI update: NEXT/LAST labels padded 24dp to the right inside fixed buttons.
+# Current UI update: NEXT/LAST labels shifted right by 16dp; buttons minimum height set to 52dp.
