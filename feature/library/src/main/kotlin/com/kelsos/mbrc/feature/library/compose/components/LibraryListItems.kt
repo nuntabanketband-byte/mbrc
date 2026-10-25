@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
@@ -343,7 +344,7 @@ private fun QueueActionMenuText(action: String, arrow: String) {
       append(" $arrow")
     },
     style = MaterialTheme.typography.bodyLarge,
-    modifier = Modifier.padding(start = 24.dp)
+    modifier = Modifier.padding(start = 16.dp)
   )
 }
 
@@ -358,6 +359,7 @@ private fun TrackItemMenu(expanded: Boolean, onDismiss: () -> Unit, onQueue: (Qu
     DropdownMenuItem(
       modifier = Modifier
         .padding(horizontal = 4.dp, vertical = 4.dp)
+        .heightIn(min = 52.dp)
         .border(
           width = 2.dp,
           color = Color.DarkGray,
@@ -372,6 +374,7 @@ private fun TrackItemMenu(expanded: Boolean, onDismiss: () -> Unit, onQueue: (Qu
     DropdownMenuItem(
       modifier = Modifier
         .padding(horizontal = 4.dp, vertical = 4.dp)
+        .heightIn(min = 52.dp)
         .border(
           width = 2.dp,
           color = Color.DarkGray,
