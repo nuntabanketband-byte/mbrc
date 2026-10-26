@@ -298,7 +298,15 @@ fun TrackListItem(
           overflow = TextOverflow.Clip
         )
       },
-      trailingContent = trailing,
+      // The library search API currently does not expose track duration, so reserve
+      // the trailing column for the duration without showing the old overflow menu here.
+      trailingContent = {
+        Text(
+          text = "--:--",
+          style = MaterialTheme.typography.bodyMedium,
+          color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+      },
       modifier = modifier.combinedClickable(
         onClick = onClick,
         onLongClick = { menuExpanded = true }
