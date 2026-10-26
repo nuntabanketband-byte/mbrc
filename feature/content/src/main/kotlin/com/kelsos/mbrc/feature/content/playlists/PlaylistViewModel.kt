@@ -63,6 +63,7 @@ class PlaylistActions(
         } else {
           val previousVolume = appState.playerStatus.value.volume.coerceIn(0, 100)
           try {
+            // Volume is read from the latest player-status snapshot and restored after the stop command.
             // Keep the playlist command intact (it starts the full playlist), but suppress
             // its audible start, stop playback immediately, then restore the user's volume.
             userActionUseCase.perform(UserAction.create(Protocol.PlayerVolume, 0))
