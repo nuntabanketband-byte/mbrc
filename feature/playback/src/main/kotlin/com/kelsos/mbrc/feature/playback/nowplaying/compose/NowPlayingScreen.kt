@@ -3,6 +3,7 @@ package com.kelsos.mbrc.feature.playback.nowplaying.compose
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -780,8 +781,12 @@ fun NowPlayingTrackItem(
   }
 
   Card(
-    onClick = onClick,
-    modifier = modifier.fillMaxWidth(),
+    modifier = modifier
+      .fillMaxWidth()
+      .combinedClickable(
+        onClick = onClick,
+        onLongClick = { showMenu = true }
+      ),
     elevation = CardDefaults.cardElevation(defaultElevation = elevation),
     colors = CardDefaults.cardColors(containerColor = backgroundColor),
     shape = RoundedCornerShape(0.dp)
@@ -804,7 +809,7 @@ fun NowPlayingTrackItem(
       Row(
         modifier = Modifier
           .weight(1f)
-          .padding(start = 16.dp, top = 12.dp, bottom = 12.dp, end = 8.dp),
+          .padding(start = 8.dp, top = 12.dp, bottom = 12.dp, end = 8.dp),
         verticalAlignment = Alignment.CenterVertically
       ) {
         // Playing indicator - larger animated audio bars
