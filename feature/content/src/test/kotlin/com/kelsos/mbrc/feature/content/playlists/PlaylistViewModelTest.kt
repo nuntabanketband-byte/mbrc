@@ -4,6 +4,9 @@ import androidx.paging.PagingData
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.cash.turbine.test
 import com.google.common.truth.Truth.assertThat
+import com.kelsos.mbrc.core.common.state.AppState
+import com.kelsos.mbrc.core.common.state.AppStateFlow
+import com.kelsos.mbrc.core.common.state.PlayerStatusModel
 import com.kelsos.mbrc.core.common.state.ConnectionStateFlow
 import com.kelsos.mbrc.core.common.test.testDispatcher
 import com.kelsos.mbrc.core.common.test.testDispatcherModule
@@ -20,6 +23,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import java.io.IOException
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -40,6 +44,11 @@ class PlaylistViewModelTest : KoinTest {
       single<PlaylistRepository> { mockk(relaxed = true) }
       single<UserActionUseCase> { mockk(relaxed = true) }
       single<ConnectionStateFlow> { mockk(relaxed = true) }
+      single<AppStateFlow> {
+        mockk(relaxed = true) {
+          every { playerStatus } returns MutableStateFlow(PlayerStatusModel(volume = 50))
+        }
+      }
       single<PlaylistTrackReader> { mockk(relaxed = true) }
       single<QueueApi> { mockk(relaxed = true) }
       singleOf(::PlaylistViewModel)
@@ -295,7 +304,16 @@ class PlaylistViewModelTest : KoinTest {
 
       // Verify user action was called with correct parameters
       coVerify(exactly = 1) {
+        userActionUseCase.perform(UserAction.create(Protocol.PlayerVolume, 0))
+      }
+      coVerify(exactly = 1) {
         userActionUseCase.perform(UserAction.create(Protocol.PlaylistPlay, playlistPath))
+      }
+      coVerify(exactly = 1) {
+        userActionUseCase.perform(UserAction.create(Protocol.PlayerStop))
+      }
+      coVerify(exactly = 1) {
+        userActionUseCase.perform(UserAction.create(Protocol.PlayerVolume, 50))
       }
     }
   }
