@@ -4,6 +4,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.paging.cachedIn
 import com.kelsos.mbrc.core.common.mvvm.BaseViewModel
 import com.kelsos.mbrc.core.common.mvvm.UiMessageBase
+import com.kelsos.mbrc.core.common.state.AppStateFlow
 import com.kelsos.mbrc.core.common.state.ConnectionStateFlow
 import com.kelsos.mbrc.core.common.utilities.coroutines.AppCoroutineDispatchers
 import com.kelsos.mbrc.core.data.playlist.PlaylistRepository
@@ -48,6 +49,7 @@ class PlaylistActions(
   private val dispatchers: AppCoroutineDispatchers,
   private val repository: PlaylistRepository,
   private val userActionUseCase: UserActionUseCase,
+  private val appState: AppStateFlow,
   private val connectionStateFlow: ConnectionStateFlow,
   private val emit: suspend (uiMessage: PlaylistUiMessages) -> Unit,
   private val getCurrentPath: () -> String,
@@ -59,11 +61,22 @@ class PlaylistActions(
         if (!connectionStateFlow.isConnected) {
           PlaylistUiMessages.NetworkUnavailable
         } else {
+          val previousVolume = appState.playerStatus.value.volume.coerceIn(0, 100)
           try {
+            // Keep the playlist command intact (it starts the full playlist), but suppress
+            // its audible start, stop playback immediately, then restore the user's volume.
+            userActionUseCase.perform(UserAction.create(Protocol.PlayerVolume, 0))
             userActionUseCase.performUserAction(Protocol.PlaylistPlay, url)
+            userActionUseCase.perform(UserAction.create(Protocol.PlayerStop))
+            userActionUseCase.perform(UserAction.create(Protocol.PlayerVolume, previousVolume))
             return@launch // Don't emit anything on success for play action
           } catch (e: IOException) {
             Timber.e(e)
+            try {
+              userActionUseCase.perform(UserAction.create(Protocol.PlayerVolume, previousVolume))
+            } catch (restoreError: IOException) {
+              Timber.e(restoreError, "Failed to restore volume after playlist action")
+            }
             PlaylistUiMessages.PlayFailed
           }
         }
@@ -127,6 +140,7 @@ class PlaylistViewModel(
   repository: PlaylistRepository,
   private val dispatchers: AppCoroutineDispatchers,
   userActionsUseCase: UserActionUseCase,
+  private val appState: AppStateFlow,
   private val connectionStateFlow: ConnectionStateFlow,
   private val trackReader: PlaylistTrackReader,
   private val queueApi: QueueApi
@@ -208,6 +222,7 @@ class PlaylistViewModel(
       dispatchers = dispatchers,
       repository = repository,
       userActionUseCase = userActionsUseCase,
+      appState = appState,
       connectionStateFlow = connectionStateFlow,
       emit = this::emit,
       getCurrentPath = { _currentPath.value },
