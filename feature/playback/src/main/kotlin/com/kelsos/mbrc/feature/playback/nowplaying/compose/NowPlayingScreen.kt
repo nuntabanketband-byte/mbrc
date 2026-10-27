@@ -785,7 +785,6 @@ fun NowPlayingTrackItem(
   }
 
   Card(
-    onClick = onClick,
     modifier = modifier.fillMaxWidth(),
     elevation = CardDefaults.cardElevation(defaultElevation = elevation),
     colors = CardDefaults.cardColors(containerColor = backgroundColor),
@@ -809,6 +808,12 @@ fun NowPlayingTrackItem(
       Row(
         modifier = Modifier
           .weight(1f)
+          .combinedClickable(
+            onClick = onClick,
+            onLongClick = {
+              if (showOverflowMenu) showMenu = true
+            }
+          )
           .padding(start = 16.dp, top = 12.dp, bottom = 12.dp, end = 8.dp),
         verticalAlignment = Alignment.CenterVertically
       ) {
@@ -833,11 +838,7 @@ fun NowPlayingTrackItem(
             fontWeight = if (isPlaying) FontWeight.Bold else FontWeight.Normal,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.combinedClickable(
-              onClick = onClick,
-              onLongClick = { showMenu = true }
-            )
+            color = MaterialTheme.colorScheme.onSurface
           )
           if (track.artist.isNotBlank() && !track.artist.equals("Unknown Artist", ignoreCase = true)) {
             Text(
