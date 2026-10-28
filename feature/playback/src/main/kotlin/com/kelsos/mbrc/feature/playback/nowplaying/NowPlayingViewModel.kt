@@ -116,6 +116,10 @@ class NowPlayingActions(
         delay(REMOVE_DELAY_MS)
         selfMutationTracker.mark()
         userActionUseCase.removeTrack(position)
+        // The remote queue-change broadcast is intentionally ignored for self mutations.
+        // Refresh explicitly after sending the remove command so Now Playing updates too.
+        delay(REMOVE_REFRESH_DELAY_MS)
+        repository.getRemote()
       } catch (e: IOException) {
         Timber.e(e)
         emit(NowPlayingUiMessages.RemoveFailed)
@@ -163,6 +167,7 @@ class NowPlayingActions(
 
   companion object {
     const val REMOVE_DELAY_MS = 400L
+    const val REMOVE_REFRESH_DELAY_MS = 500L
   }
 }
 
