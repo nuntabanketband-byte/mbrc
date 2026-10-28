@@ -114,8 +114,11 @@ class NowPlayingActions(
       }
       try {
         delay(REMOVE_DELAY_MS)
-        selfMutationTracker.mark()
-        userActionUseCase.removeTrack(position)
+        // The UI callback supplies a zero-based row index; the MusicBee protocol
+        // uses one-based queue positions. Send the remote command, then remove the
+        // corresponding local row so Now Playing updates even without a broadcast.
+        userActionUseCase.removeTrack(position + 1)
+        repository.remove(position)
       } catch (e: IOException) {
         Timber.e(e)
         emit(NowPlayingUiMessages.RemoveFailed)
