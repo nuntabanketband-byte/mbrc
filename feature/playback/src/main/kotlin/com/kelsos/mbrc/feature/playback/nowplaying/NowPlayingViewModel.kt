@@ -114,7 +114,6 @@ class NowPlayingActions(
       }
       try {
         delay(REMOVE_DELAY_MS)
-        selfMutationTracker.mark()
         userActionUseCase.removeTrack(position)
       } catch (e: IOException) {
         Timber.e(e)
