@@ -409,6 +409,7 @@ val drawerScreens = listOf(
   Screen.Home,
   Screen.Library,
   Screen.Playlists,
+  Screen.Slots,
   Screen.Radio,
   Screen.Settings,
   Screen.Help
