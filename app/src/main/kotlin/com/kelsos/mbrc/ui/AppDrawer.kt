@@ -452,6 +452,7 @@ private val primaryNavigationItems = listOf(
   DrawerItem(Screen.NowPlayingList, Icons.AutoMirrored.Filled.QueueMusic, R.string.nav_queue),
   DrawerItem(Screen.Library, Icons.Default.LibraryMusic, R.string.common_library),
   DrawerItem(Screen.Playlists, Icons.AutoMirrored.Filled.PlaylistPlay, R.string.nav_playlists)
+  DrawerItem(Screen.Slots, Icons.AutoMirrored.Filled.QueueMusic, R.string.nav_slots)
 )
 
 private val secondaryNavigationItems = listOf(
