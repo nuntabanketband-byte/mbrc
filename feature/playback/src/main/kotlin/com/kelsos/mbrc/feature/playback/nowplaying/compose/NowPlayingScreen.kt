@@ -120,6 +120,7 @@ fun NowPlayingScreen(
   snackbarHostState: SnackbarHostState,
   pendingRemovePath: String? = null,
   onPendingRemoveComplete: () -> Unit = {},
+  screenTitle: String? = null,
   viewModel: NowPlayingViewModel = koinViewModel()
 ) {
   val queue = viewModel.tracks.collectAsLazyPagingItems()
@@ -178,7 +179,7 @@ fun NowPlayingScreen(
 
   val searchPlaceholder = stringResource(R.string.now_playing_search_hint)
   val scrollToPlayingLabel = stringResource(R.string.now_playing__scroll_to_playing)
-  val title = stringResource(R.string.nav_queue)
+  val title = screenTitle ?: stringResource(R.string.nav_queue)
 
   // Compute scaffold configuration based on current state
   val topBarState = if (isSearchActive) {
