@@ -266,6 +266,41 @@ fun AppNavGraph(
       )
     }
 
+    // Slots is a second entry point to the same Queue UI and behaviour.
+    composable(Screen.Slots.route) { entry ->
+      val trackRepository: TrackRepository = koinInject()
+      val scope = rememberCoroutineScope()
+      val trackNotFoundMessage = stringResource(R.string.navigation_track_not_in_library)
+
+      NowPlayingScreen(
+        onOpenDrawer = onOpenDrawer,
+        onNavigateToLibrarySearch = {
+          navController.navigateFrom(entry, Screen.LibrarySearch.route)
+        },
+        onNavigateToPlayer = {
+          navController.navigateFrom(entry, Screen.Home.route)
+        },
+        onNavigateToAlbum = { path ->
+          scope.launch {
+            val track = trackRepository.getByPath(path)
+            if (track != null && track.album.isNotBlank()) {
+              val encodedAlbum = Uri.encode(track.album)
+              val encodedArtist = Uri.encode(track.albumArtist.ifBlank { track.artist })
+              navController.navigateFrom(entry, "album_tracks/0/$encodedAlbum/$encodedArtist")
+            } else {
+              snackbarHostState.showSnackbar(trackNotFoundMessage)
+            }
+          }
+        },
+        onNavigateToArtist = { artist ->
+          val encodedName = Uri.encode(artist)
+          navController.navigateFrom(entry, "artist_albums/0/$encodedName")
+        },
+        snackbarHostState = snackbarHostState,
+        screenTitle = stringResource(R.string.nav_slots)
+      )
+    }
+
     composable(Screen.ConnectionManager.route) {
       ConnectionManagerScreen(
         snackbarHostState = snackbarHostState,
@@ -332,6 +367,7 @@ sealed class Screen(val route: String) {
 
   // Screens without arguments
   data object NowPlayingList : Screen("now_playing_list")
+  data object Slots : Screen("slots")
   data object ConnectionManager : Screen("connection_manager")
   data object Licenses : Screen("licenses")
   data object AppLicense : Screen("app_license")
