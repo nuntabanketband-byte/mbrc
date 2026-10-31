@@ -791,15 +791,35 @@ private fun PortraitPlayerLayout(
 
       Spacer(modifier = Modifier.height(24.dp))
 
-      // Volume control - compact
-      VolumeSection(
-        volumeState = volumeState,
-        actions = actions,
-        onOutputClick = onOutputClick,
+      // Volume control and pitch / tempo step controls.
+      // Keep the volume slider on the left and reserve the right side for a 2x2 control pad.
+      Row(
         modifier = Modifier
           .fillMaxWidth()
-          .padding(horizontal = PlayerConstants.CONTENT_PADDING)
-      )
+          .padding(horizontal = PlayerConstants.CONTENT_PADDING),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+      ) {
+        VolumeSection(
+          volumeState = volumeState,
+          actions = actions,
+          onOutputClick = onOutputClick,
+          modifier = Modifier.weight(0.58f)
+        )
+        Column(
+          modifier = Modifier.weight(0.42f),
+          verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+          Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            PitchTempoStepButton("P+1", enabled = false, modifier = Modifier.weight(1f))
+            PitchTempoStepButton("T+1", enabled = false, modifier = Modifier.weight(1f))
+          }
+          Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            PitchTempoStepButton("P-1", enabled = false, modifier = Modifier.weight(1f))
+            PitchTempoStepButton("T-1", enabled = false, modifier = Modifier.weight(1f))
+          }
+        }
+      }
     }
   }
 }
@@ -1331,6 +1351,29 @@ private fun ProgressSection(
         position = position,
         style = timeStyle,
         color = MaterialTheme.colorScheme.onSurfaceVariant
+      )
+    }
+  }
+}
+
+@Composable
+private fun PitchTempoStepButton(
+  label: String,
+  enabled: Boolean,
+  modifier: Modifier = Modifier
+) {
+  Surface(
+    modifier = modifier.height(36.dp),
+    shape = RoundedCornerShape(8.dp),
+    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (enabled) 0.9f else 0.38f),
+    contentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = if (enabled) 1f else 0.42f),
+    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.45f))
+  ) {
+    Box(contentAlignment = Alignment.Center) {
+      Text(
+        text = label,
+        style = MaterialTheme.typography.labelLarge,
+        fontWeight = FontWeight.Bold
       )
     }
   }
